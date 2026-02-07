@@ -1,3 +1,64 @@
+// script.js
+
+// Sprite Animation Configuration
+const spriteConfig = {
+    hero: { totalFrames: 25, cols: 5, rows: 5, fps: 24 },    // Based on your JSON
+    partner: { totalFrames: 25, cols: 5, rows: 5, fps: 24 }  // Based on your JSON
+};
+
+let lastTime = 0;
+const frameInterval = 1000 / 24; // 24 FPS target
+
+function animateSprites(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const deltaTime = timestamp - lastTime;
+
+    if (deltaTime > frameInterval) {
+        // Update Hero
+        updateSpriteFrame('hero', spriteConfig.hero);
+        // Update Partner
+        updateSpriteFrame('partner', spriteConfig.partner);
+        
+        lastTime = timestamp;
+    }
+    requestAnimationFrame(animateSprites);
+}
+
+// Track current frame index for each character
+const currentFrames = { hero: 0, partner: 0 };
+
+function updateSpriteFrame(id, config) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // Increment frame
+    currentFrames[id] = (currentFrames[id] + 1) % config.totalFrames;
+
+    // Calculate Grid Position
+    // The sheet is 5x5. 
+    // Col = Frame % 5
+    // Row = Math.floor(Frame / 5)
+    
+    const col = currentFrames[id] % config.cols;
+    const row = Math.floor(currentFrames[id] / config.cols);
+
+    // Calculate Percentage Offset
+    // If there are 5 cols, the positions are 0%, 25%, 50%, 75%, 100%
+    // Formula: index * (100 / (cols - 1))
+    
+    const xPos = col * (100 / (config.cols - 1));
+    const yPos = row * (100 / (config.rows - 1));
+
+    el.style.backgroundPosition = `${xPos}% ${yPos}%`;
+}
+
+// Start the animation loop when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // ... your existing initParticles() code ...
+    
+    requestAnimationFrame(animateSprites);
+});
+
 // Particle System
 const canvas = document.getElementById('particle-canvas');
 const ctx = canvas.getContext('2d');
@@ -121,3 +182,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Example usage for testing
     // setTimeout(() => showDialogue('hero', 'Where... am I? The static is so loud.'), 1000);
 });
+
