@@ -6,6 +6,37 @@
     --ash-grey: #2A2A2A;
     --font-nes: 'Courier New', monospace; /* Placeholder for 8-bit font */
 }
+/* style.css */
+
+.character {
+    position: absolute;
+    /* Adjust this size to change how big they look on screen */
+    width: 64px; 
+    height: 64px;
+    
+    /* Pixel Art crispness */
+    image-rendering: pixelated;
+    
+    /* THE SPRITE LOGIC */
+    background-repeat: no-repeat;
+    
+    /* The image is a 5x5 grid. 
+       So the background needs to be 500% width and 500% height 
+       of the container to show exactly 1 frame.
+    */
+    background-size: 500% 500%; 
+}
+
+/* Specific Character Images */
+#hero {
+    background-image: url('harshpromlp-idle-v1.png'); /* Ensure this is the PNG */
+    z-index: 10;
+}
+
+#partner {
+    background-image: url('nanlp-idle.png'); /* Ensure this is the PNG */
+    z-index: 9;
+}
 
 body {
     margin: 0;
@@ -175,3 +206,4 @@ body {
     color: var(--void-black);
     box-shadow: 4px 4px 0 var(--glitch-cyan);
 }
+
