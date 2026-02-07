@@ -1,1 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocol: SUNS - IRIDESCENT TEDDY</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #000;
+        }
 
+        #frost-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 30%, rgba(0, 50, 255, 0.5));
+            pointer-events: none;
+            z-index: 10;
+            transition: opacity 0.1s;
+            opacity: 0;
+        }
+
+        #game-stage {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .wood-pile {
+            width: 100px;
+            height: 60px;
+            background: #5D4037;
+            position: absolute;
+            bottom: 20%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .teddy {
+            width: 60px;
+            height: 60px;
+            background: url('teddy_placeholder.png'); /* Fallback needed */
+            background-color: #FF69B4; /* Pink fallback */
+            border-radius: 50%;
+            position: absolute;
+            bottom: 20%;
+            right: 20%;
+            display: none;
+            cursor: pointer;
+            box-shadow: 0 0 10px #FFF;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .fire {
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, #FF4500, transparent);
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            animation: flicker-fire 0.2s infinite alternate;
+        }
+
+        @keyframes flicker-fire {
+            from { opacity: 0.8; transform: translateX(-50%) scale(1); }
+            to { opacity: 1; transform: translateX(-50%) scale(1.1); }
+        }
+
+        .status-text {
+            color: var(--glitch-cyan);
+            margin-top: 20px;
+            font-size: 1.2rem;
+            z-index: 11;
+        }
+        
+        .choice-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .choice-btn {
+            background: var(--void-black);
+            color: var(--static-white);
+            border: 2px solid var(--nuclear-orange);
+            padding: 15px;
+            font-family: var(--font-nes);
+            cursor: pointer;
+        }
+        
+        .choice-btn:hover {
+            background: var(--nuclear-orange);
+            color: var(--void-black);
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div id="frost-overlay"></div>
+    <canvas id="particle-canvas"></canvas>
+
+    <div id="game-stage">
+        <div class="status-text" id="status">Freezing... Mash SPACE to gather warmth!</div>
+        <div class="wood-pile" id="wood" onclick="gatherWarmth()">WOOD</div>
+        <div class="fire" id="fire"></div>
+        <div class="teddy" id="teddy">🧸</div>
+    </div>
+
+    <div class="choice-container" id="choices">
+        <button class="choice-btn" onclick="makeChoice('A')">A) "Failure is part of the process."</button>
+        <button class="choice-btn" onclick="makeChoice('B')">B) "Remember all the sadness and frustration... and let it go."</button>
+    </div>
+
+    <!-- Dialogue UI -->
+    <div class="dialogue-container">
+        <div class="portrait-frame">
+            <img src="" alt="Character Portrait">
+        </div>
+        <div class="dialogue-text-area">
+            <span class="name-tag"></span>
+            <span class="dialogue-text"></span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Snow System
+        class SnowParticle extends Particle {
+            constructor() {
+                super();
+                this.color = '#FFF';
+                this.speedX = Math.random() * 3 + 2; // Wind
+                this.speedY = Math.random() * 2 + 1;
+            }
+        }
+        particles.length = 0;
+        for (let i = 0; i < 100; i++) particles.push(new SnowParticle());
+
+        // Game Logic
+        let freezeLevel = 0;
+        let warmth = 50;
+        let gatheredCount = 0;
+        const frost = document.getElementById('frost-overlay');
+        const status = document.getElementById('status');
+        const teddy = document.getElementById('teddy');
+        let gameActive = true;
+
+        function updateGame() {
+            if(!gameActive) return;
+
+            warmth -= 0.2; // Getting cold
+            if(warmth > 100) warmth = 100;
+            if(warmth < 0) {
+                // Frozen
+                gameActive = false;
+                status.textContent = "FROZEN. REFRESH TO RETRY.";
+                status.style.color = "blue";
+                return;
+            }
+
+            // Visuals
+            const opacity = (100 - warmth) / 100;
+            frost.style.opacity = opacity;
+
+            requestAnimationFrame(updateGame);
+        }
+
+        function gatherWarmth() {
+            if(!gameActive) return;
+            warmth += 10;
+            gatheredCount++;
+            
+            // Visual feedback
+            const wood = document.getElementById('wood');
+            wood.style.transform = 'scale(0.9)';
+            setTimeout(() => wood.style.transform = 'scale(1)', 50);
+
+            if(gatheredCount === 15) {
+                status.textContent = "You found something buried in the snow!";
+                teddy.style.display = 'block';
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if(e.code === 'Space') gatherWarmth();
+        });
+
+        teddy.addEventListener('click', () => {
+            gameActive = false; // Stop freezing
+            frost.style.opacity = 0;
+            startDialogue();
+        });
+
+        function startDialogue() {
+            showDialogue('partner', "Do you feel cold and lost in desperation?", () => {
+                document.getElementById('choices').style.display = 'flex';
+            });
+        }
+
+        window.makeChoice = function(option) {
+            document.getElementById('choices').style.display = 'none';
+            if(option === 'A') {
+                showDialogue('partner', "No...", () => location.reload());
+            } else {
+                showDialogue('partner', "Let it go.", () => {
+                    // Fire sparks
+                    document.getElementById('fire').style.display = 'block';
+                    document.body.style.backgroundColor = '#221111'; // Warm up
+                    
+                    localStorage.setItem('fragment_5', 'found');
+                    setTimeout(() => {
+                        window.location.href = 'catalytic promise.html';
+                    }, 2000);
+                });
+            }
+        }
+
+        updateGame();
+    </script>
+</body>
+</html>
