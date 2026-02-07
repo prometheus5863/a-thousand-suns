@@ -1,1 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocol: SUNS - CHOCOLATE ROBOT BOY</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #1a1a1a; /* Dark industrial grey */
+        }
 
+        #bunker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .circuit-board {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 80px);
+            gap: 5px;
+            background: #333;
+            padding: 10px;
+            border: 4px solid var(--ash-grey);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .tile {
+            width: 80px;
+            height: 80px;
+            background-color: #222;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .tile::after {
+            content: '';
+            position: absolute;
+            background-color: #555; /* Wire color off */
+            transition: background-color 0.3s;
+        }
+
+        .tile.powered::after {
+            background-color: var(--nuclear-orange); /* Wire color on */
+            box-shadow: 0 0 5px var(--nuclear-orange);
+        }
+
+        /* Wire Shapes */
+        .straight::after {
+            top: 35px; left: 0; width: 100%; height: 10px;
+        }
+        
+        .corner::after {
+            top: 35px; left: 0; width: 55%; height: 10px;
+        }
+        .corner::before {
+            content: ''; position: absolute; background-color: #555;
+            top: 35px; left: 35px; width: 10px; height: 100%; /* Down */
+            transition: background-color 0.3s;
+        }
+        .tile.powered.corner::before { background-color: var(--nuclear-orange); box-shadow: 0 0 5px var(--nuclear-orange); }
+
+        /* Robot & Battery */
+        .components {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 500px;
+            margin-bottom: 20px;
+        }
+
+        .battery {
+            width: 60px;
+            height: 100px;
+            background: #8B4513; /* Chocolate brown */
+            border: 2px solid #D2691E;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 0.8rem;
+        }
+        .battery::after { content: "CHOCO-BAT"; transform: rotate(-90deg); }
+
+        .robot-container {
+            width: 100px;
+            height: 100px;
+            position: relative;
+        }
+        
+        .robot {
+            width: 100%; height: 100%;
+            background-image: url('nanlp-idle-v1.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            filter: grayscale(100%) brightness(50%);
+            transition: filter 1s;
+        }
+
+        .spotlight {
+            position: absolute;
+            top: -100px; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 60%);
+            animation: flicker-light 3s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes flicker-light {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+            20%, 24%, 55% { opacity: 0.3; }
+        }
+
+        .choice-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .choice-btn {
+            background: var(--void-black);
+            color: var(--static-white);
+            border: 2px solid var(--nuclear-orange);
+            padding: 15px;
+            font-family: var(--font-nes);
+            cursor: pointer;
+        }
+        
+        .choice-btn:hover {
+            background: var(--nuclear-orange);
+            color: var(--void-black);
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div id="bunker">
+        <div class="components">
+            <div class="battery"></div>
+            <div class="circuit-board" id="grid"></div>
+            <div class="robot-container">
+                <div class="robot" id="robot"></div>
+                <div class="spotlight"></div>
+            </div>
+        </div>
+        <p style="color: var(--ash-grey);">Connect the circuit to wake the sleeper.</p>
+    </div>
+
+    <div class="choice-container" id="choices">
+        <button class="choice-btn" onclick="makeChoice('A')">A) "I will fight for you."</button>
+        <button class="choice-btn" onclick="makeChoice('B')">B) "Hold on, the weight of the world will give you the strength to go."</button>
+    </div>
+
+    <!-- Dialogue UI -->
+    <div class="dialogue-container">
+        <div class="portrait-frame">
+            <img src="" alt="Character Portrait">
+        </div>
+        <div class="dialogue-text-area">
+            <span class="name-tag"></span>
+            <span class="dialogue-text"></span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Simple Grid Logic
+        // 0: Empty, 1: Straight, 2: Corner
+        // We just simulate a 1-row connection for simplicity in this demo, or hardcode the solution check
+        // Let's do a 3x1 straight line for simplicity of "getting it done" robustly
+        // Actually user prompt says "Circuit Puzzle", let's do 3x3 but simple path.
+        // Path: (1,0) -> (1,1) -> (1,2)
+        // Middle row straight across.
+        
+        const grid = document.getElementById('grid');
+        const tiles = [];
+        const robot = document.getElementById('robot');
+        
+        // Define board configuration (simple path: Middle Row Left to Right)
+        // Indices: 0 1 2
+        //          3 4 5
+        //          6 7 8
+        // Path: 3 -> 4 -> 5
+        
+        const winningRotations = {
+            3: 0, // Straight horizontal
+            4: 0, 
+            5: 0
+        };
+
+        // Create 9 tiles
+        for(let i=0; i<9; i++) {
+            const tile = document.createElement('div');
+            tile.classList.add('tile');
+            tile.dataset.index = i;
+            
+            // Assign shapes
+            // Row 2 is Straight
+            if(i >= 3 && i <= 5) {
+                tile.classList.add('straight');
+            } else {
+                // Others random junk
+                tile.classList.add(Math.random() > 0.5 ? 'corner' : 'straight');
+            }
+
+            // Random initial rotation (0, 90, 180, 270)
+            let rotation = Math.floor(Math.random() * 4) * 90;
+            tile.style.transform = `rotate(${rotation}deg)`;
+            tile.dataset.rotation = rotation;
+
+            tile.addEventListener('click', () => {
+                rotation = (rotation + 90) % 360;
+                tile.style.transform = `rotate(${rotation}deg)`;
+                tile.dataset.rotation = rotation;
+                checkCircuit();
+            });
+
+            grid.appendChild(tile);
+            tiles.push(tile);
+        }
+
+        function checkCircuit() {
+            // Check if 3, 4, 5 are horizontal
+            // Straight tile is horizontal at 0 or 180
+            const t3 = parseInt(tiles[3].dataset.rotation) % 180 === 0;
+            const t4 = parseInt(tiles[4].dataset.rotation) % 180 === 0;
+            const t5 = parseInt(tiles[5].dataset.rotation) % 180 === 0;
+
+            if(t3 && t4 && t5) {
+                // Power up visuals
+                tiles[3].classList.add('powered');
+                tiles[4].classList.add('powered');
+                tiles[5].classList.add('powered');
+                
+                // Wake robot
+                setTimeout(() => {
+                    robot.style.filter = 'none'; // Color
+                    robot.style.boxShadow = '0 0 20px var(--glitch-cyan)';
+                    startDialogue();
+                }, 500);
+            } else {
+                 tiles[3].classList.remove('powered');
+                 tiles[4].classList.remove('powered');
+                 tiles[5].classList.remove('powered');
+            }
+        }
+
+        function startDialogue() {
+            showDialogue('partner', "You say you're not gonna fight... 'cause no one will fight for you.", () => {
+                document.getElementById('choices').style.display = 'flex';
+            });
+        }
+
+        window.makeChoice = function(option) {
+            document.getElementById('choices').style.display = 'none';
+            if(option === 'A') {
+                showDialogue('partner', "Not like that...", () => {
+                    // Retry - just scramble?
+                    location.reload();
+                });
+            } else {
+                showDialogue('partner', "Hold on...", () => {
+                    robot.style.boxShadow = '0 0 40px #FF69B4'; // Pink glow
+                    localStorage.setItem('fragment_4', 'found');
+                    setTimeout(() => {
+                        window.location.href = 'iridescent teddy.html';
+                    }, 2000);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
