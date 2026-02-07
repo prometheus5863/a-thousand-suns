@@ -1,1 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocol: SUNS - MESSENGER</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background: linear-gradient(to bottom, #FFD700, #87CEEB); /* Sunrise */
+            color: #000;
+        }
+        
+        /* Remove CRT darkness, keep scanlines maybe but lighter */
+        .crt-overlay {
+            opacity: 0.1;
+            background: none;
+        }
 
+        #game-stage {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 20%;
+            background: #228B22; /* Green */
+            border-top: 4px solid #006400;
+        }
+
+        .grass {
+            position: absolute;
+            bottom: 20%;
+            width: 10px; height: 10px;
+            background: #006400;
+        }
+
+        .ruins {
+            position: absolute;
+            bottom: 20%;
+            background: #555;
+            width: 100px; height: 100px;
+        }
+        
+        .ruins.mossy {
+            border-top: 5px solid #228B22;
+        }
+
+        .character {
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            bottom: 20%;
+            background-size: contain;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+            transition: left 0.1s linear;
+        }
+
+        #hero {
+            left: 10%;
+            background-image: url('harshpromlp-idle-v1.png');
+            background-color: var(--glitch-cyan);
+        }
+
+        #partner {
+            right: 20%;
+            background-image: url('nanlp-idle-v1.png');
+            background-color: var(--nuclear-orange);
+        }
+
+        .choice-container {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .choice-btn {
+            background: #fff;
+            color: #000;
+            border: 2px solid #FF4500;
+            padding: 15px;
+            font-family: var(--font-nes);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        .choice-btn:hover {
+            background: #FF4500;
+            color: #fff;
+        }
+
+        #credits {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            color: #FFF;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 9999;
+            font-family: monospace;
+        }
+
+        .ascii-heart {
+            white-space: pre;
+            color: #FF69B4;
+            font-size: 0.8rem;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div id="game-stage">
+        <!-- Decor -->
+        <div class="ground"></div>
+        <div class="ruins mossy" style="left: 30%"></div>
+        <div class="ruins mossy" style="left: 60%"></div>
+        
+        <div id="hero" class="character"></div>
+        <div id="partner" class="character"></div>
+    </div>
+
+    <div class="choice-container" id="choices">
+        <button class="choice-btn" onclick="finishGame()">"Love keeps us kind."</button>
+    </div>
+
+    <!-- Dialogue UI -->
+    <div class="dialogue-container">
+        <div class="portrait-frame">
+            <img src="" alt="Character Portrait">
+        </div>
+        <div class="dialogue-text-area">
+            <span class="name-tag"></span>
+            <span class="dialogue-text"></span>
+        </div>
+    </div>
+
+    <div id="credits">
+        <h1>PROTOCOL: SUNS COMPLETE</h1>
+        <p>Developed for Valentine's Week</p>
+        <p>Music: Linkin Park - A Thousand Suns</p>
+        <div class="ascii-heart">
+      ******       ******
+    **********   **********
+  ************* *************
+ *****************************
+ *****************************
+  ***************************
+    ***********************
+      *******************
+        ***************
+          ***********
+            *******
+              ***
+               *
+        </div>
+        <button class="btn" onclick="location.href='index.html'">RESTART EXPERIENCE</button>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        const hero = document.getElementById('hero');
+        const partner = document.getElementById('partner');
+        let heroX = 10;
+        const targetX = 70;
+        let gameActive = true;
+
+        // Walk logic
+        document.addEventListener('keydown', (e) => {
+            if(!gameActive) return;
+            if(e.code === 'ArrowRight') {
+                heroX += 0.5;
+                hero.style.left = heroX + '%';
+                
+                if(heroX >= targetX) {
+                    gameActive = false;
+                    startFinale();
+                }
+            }
+        });
+
+        function startFinale() {
+            showDialogue('partner', "When life leaves us blind...", () => {
+                document.getElementById('choices').style.display = 'flex';
+            });
+        }
+
+        window.finishGame = function() {
+            document.getElementById('choices').style.display = 'none';
+            // Play finale sound?
+            showDialogue('hero', "Love keeps us kind.", () => {
+                setTimeout(() => {
+                    document.getElementById('credits').style.display = 'flex';
+                }, 1000);
+            });
+        }
+
+        // Init message
+        setTimeout(() => {
+            showDialogue('hero', "The static is gone. It's... quiet.");
+        }, 1000);
+    </script>
+</body>
+</html>
