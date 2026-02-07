@@ -1,0 +1,91 @@
+/* Mission Select Styles */
+.mission-select-container {
+    width: 80%;
+    max-width: 800px;
+    margin: 20px auto;
+    border: 4px solid var(--static-white);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+}
+
+.mission-header {
+    text-align: center;
+    border-bottom: 2px solid var(--nuclear-orange);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+.mission-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.mission-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    border: 2px solid var(--ash-grey);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--font-nes);
+    text-transform: uppercase;
+    position: relative;
+}
+
+.mission-item:hover:not(.locked) {
+    border-color: var(--nuclear-orange);
+    background: rgba(255, 69, 0, 0.1);
+    transform: translateX(10px);
+}
+
+.mission-item:hover:not(.locked)::before {
+    content: ">";
+    position: absolute;
+    left: 5px;
+    color: var(--nuclear-orange);
+    animation: blink 0.5s infinite;
+}
+
+.mission-item.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(100%);
+    border-color: #333;
+}
+
+.mission-date {
+    color: var(--glitch-cyan);
+    width: 150px;
+}
+
+.mission-title {
+    color: var(--static-white);
+    flex-grow: 1;
+}
+
+.mission-status {
+    color: var(--nuclear-orange);
+    width: 100px;
+    text-align: right;
+}
+
+.mission-item.locked .mission-status::after {
+    content: " [LOCKED]";
+    color: #555;
+}
+
+.mission-item.unlocked .mission-status::after {
+    content: " [OPEN]";
+}
+
+.mission-item.completed {
+    border-color: var(--glitch-cyan);
+}
+
+.mission-item.completed .mission-status::after {
+    content: " [DONE]";
+    color: var(--glitch-cyan);
+}

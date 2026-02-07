@@ -1,0 +1,177 @@
+:root {
+    --void-black: #000000;
+    --nuclear-orange: #FF4500;
+    --static-white: #F0F0F0;
+    --glitch-cyan: #00FFFF;
+    --ash-grey: #2A2A2A;
+    --font-nes: 'Courier New', monospace; /* Placeholder for 8-bit font */
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--void-black);
+    color: var(--static-white);
+    font-family: var(--font-nes);
+    overflow: hidden; /* Prevent scrolling for the "screen" feel */
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+/* CRT Overlay */
+.crt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 0, 0, 0.25) 50%
+    );
+    background-size: 100% 4px; /* Scanlines */
+    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9); /* Vignette */
+}
+
+.crt-overlay::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 0, 0, 0.25) 50%
+    );
+    background-size: 100% 2px;
+    z-index: 2;
+    background-color: rgba(0, 0, 0, 0.1);
+    opacity: 0.15;
+    animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+    0% { opacity: 0.15; }
+    50% { opacity: 0.1; }
+    100% { opacity: 0.15; }
+}
+
+/* Glitch Text */
+.glitch {
+    position: relative;
+    color: var(--static-white);
+    font-size: 2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.glitch:hover {
+    color: var(--nuclear-orange);
+    text-shadow: 
+        2px 0 var(--glitch-cyan), 
+        -2px 0 var(--nuclear-orange);
+    animation: glitch-anim 0.3s infinite;
+    cursor: pointer;
+}
+
+@keyframes glitch-anim {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+}
+
+/* Dialogue UI */
+.dialogue-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 800px;
+    height: 150px;
+    background-color: var(--ash-grey);
+    border: 4px solid var(--static-white);
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    box-shadow: 0 0 10px var(--nuclear-orange);
+    display: none; /* Hidden by default */
+}
+
+.portrait-frame {
+    width: 120px;
+    height: 120px;
+    border: 2px solid var(--static-white);
+    background-color: var(--void-black);
+    margin-right: 20px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.portrait-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Adjust as needed for sprites */
+    image-rendering: pixelated; /* Crucial for 8-bit art */
+}
+
+.dialogue-text-area {
+    flex-grow: 1;
+    color: var(--static-white);
+    font-family: var(--font-nes);
+    font-size: 1.2rem;
+    line-height: 1.5;
+}
+
+.name-tag {
+    color: var(--nuclear-orange);
+    font-weight: bold;
+    margin-bottom: 5px;
+    display: block;
+}
+
+/* Canvas for Particles */
+#particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+/* Utility */
+.hidden {
+    display: none !important;
+}
+
+.btn {
+    background: var(--ash-grey);
+    color: var(--static-white);
+    border: 2px solid var(--static-white);
+    padding: 10px 20px;
+    font-family: var(--font-nes);
+    cursor: pointer;
+    margin-top: 20px;
+    text-transform: uppercase;
+}
+
+.btn:hover {
+    background: var(--nuclear-orange);
+    color: var(--void-black);
+    box-shadow: 4px 4px 0 var(--glitch-cyan);
+}
