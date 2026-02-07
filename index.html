@@ -1,1 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROTOCOL: SUNS - MISSION SELECT</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="mission_select.css">
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <canvas id="particle-canvas"></canvas>
 
+    <div class="mission-select-container">
+        <div class="mission-header">
+            <h1 class="glitch" style="margin: 0;">PROTOCOL: SUNS</h1>
+            <p style="margin: 5px 0; font-size: 0.8rem; color: var(--static-white);">A Thousand Suns Experience</p>
+        </div>
+
+        <ul class="mission-list" id="mission-list">
+            <!-- Level 1 -->
+            <li class="mission-item unlocked" data-level="1" data-link="burning roses in the sky.html" onclick="selectMission(this)">
+                <span class="mission-date">FEB 07</span>
+                <span class="mission-title">BURNING ROSES</span>
+                <span class="mission-status"></span>
+            </li>
+            
+            <!-- Level 2 -->
+            <li class="mission-item locked" data-level="2" data-req="fragment_2" data-link="waiting for the proposal to end.html" onclick="selectMission(this)">
+                <span class="mission-date">FEB 08</span>
+                <span class="mission-title">GRAVITY DEBRIS</span>
+                <span class="mission-status"></span>
+            </li>
+
+            <!-- Level 3 -->
+            <li class="mission-item locked" data-level="3" data-req="fragment_3" data-link="chocolate robot boy.html" onclick="selectMission(this)">
+                <span class="mission-date">FEB 09</span>
+                <span class="mission-title">CIRCUIT WAKE</span>
+                <span class="mission-status"></span>
+            </li>
+
+            <!-- Level 4 -->
+            <li class="mission-item locked" data-level="4" data-req="fragment_4" data-link="iridescent teddy.html" onclick="selectMission(this)">
+                <span class="mission-date">FEB 10</span>
+                <span class="mission-title">FROZEN PROMISE</span>
+                <span class="mission-status"></span>
+            </li>
+
+            <!-- Level 5 -->
+            <li class="mission-item locked" data-level="5" data-req="fragment_5" data-link="catalytic promise.html" onclick="selectMission(this)">
+                <span class="mission-date">FEB 11</span>
+                <span class="mission-title">CATALYTIC EDGE</span>
+                <span class="mission-status"></span>
+            </li>
+
+            <!-- Level 6 -->
+            <li class="mission-item locked" data-level="6" data-req="fragment_6" data-link="blackout hug.html" onclick="selectMission(this)">
+                <span class="mission-date">FEB 12</span>
+                <span class="mission-title">BLACKOUT RHYTHM</span>
+                <span class="mission-status"></span>
+            </li>
+
+            <!-- Level 7 -->
+            <li class="mission-item locked" data-level="7" data-req="fragment_7" data-link="kiss of requim.html" onclick="selectMission(this)">
+                <span class="mission-date">FEB 13</span>
+                <span class="mission-title">REQUIEM SIGNAL</span>
+                <span class="mission-status"></span>
+            </li>
+
+            <!-- Level 8 -->
+            <li class="mission-item locked" data-level="8" data-req="fragment_8" data-link="messenger of valentines day.html" onclick="selectMission(this)">
+                <span class="mission-date">FEB 14</span>
+                <span class="mission-title">THE MESSENGER</span>
+                <span class="mission-status"></span>
+            </li>
+        </ul>
+        
+        <div style="text-align: center; margin-top: 20px;">
+             <button class="btn" onclick="clearProgress()">RESET PROTOCOL</button>
+        </div>
+    </div>
+
+    <!-- Audio Placeholder -->
+    <audio id="bgm" loop>
+        <source src="theme.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const items = document.querySelectorAll('.mission-item');
+            
+            items.forEach(item => {
+                const req = item.dataset.req;
+                
+                // Check if unlocked
+                if (req) {
+                    if (localStorage.getItem(req) === 'found') {
+                        unlockItem(item);
+                    }
+                }
+
+                // Check if completed (next fragment found)
+                // Logic: If Level 1 is done, fragment_2 is found.
+                // If Level 2 is done, fragment_3 is found.
+                // So for Level X, check if fragment_{X+1} exists?
+                // Level 1: checks nothing to unlock. Completion gives fragment_2.
+                // So if fragment_2 exists, Level 1 is COMPLETED.
+                
+                const level = parseInt(item.dataset.level);
+                const nextFragment = 'fragment_' + (level + 1);
+                
+                if (level === 8) {
+                    // Level 8 completion? Maybe check something else or just assume if unlocked it's playable.
+                    // Or if we had a specific end game flag.
+                } else {
+                    if (localStorage.getItem(nextFragment) === 'found') {
+                        markCompleted(item);
+                    }
+                }
+            });
+        });
+
+        function unlockItem(item) {
+            item.classList.remove('locked');
+            item.classList.add('unlocked');
+        }
+
+        function markCompleted(item) {
+            item.classList.add('completed');
+        }
+
+        function selectMission(item) {
+            if (item.classList.contains('locked')) {
+                // Play error sound or shake
+                item.style.animation = 'shake 0.5s';
+                setTimeout(() => item.style.animation = '', 500);
+                return;
+            }
+            
+            // Navigate
+            const link = item.dataset.link;
+            window.location.href = link;
+        }
+
+        function clearProgress() {
+            if(confirm("WARNING: THIS WILL RESET ALL SYSTEM PROGRESS. CONTINUE?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
