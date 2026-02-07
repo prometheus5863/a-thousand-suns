@@ -1,1 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocol: SUNS - BLACKOUT HUG</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #000;
+        }
 
+        #city-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, #111, #000);
+            z-index: 0;
+        }
+
+        /* Glitch effects on everything */
+        .glitch-heavy {
+            animation: glitch-skew 0.3s infinite;
+        }
+
+        @keyframes glitch-skew {
+            0% { transform: skew(0deg); }
+            20% { transform: skew(-10deg); filter: hue-rotate(90deg); }
+            40% { transform: skew(10deg); filter: hue-rotate(-90deg); }
+            60% { transform: skew(-5deg); opacity: 0.8; }
+            80% { transform: skew(5deg); opacity: 1; }
+            100% { transform: skew(0deg); }
+        }
+
+        .character {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            bottom: 30%;
+            background-size: contain;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+        }
+
+        #hero {
+            left: 30%;
+            background-image: url('harshpromlp-idle-v1.png');
+            background-color: var(--glitch-cyan);
+        }
+
+        #partner {
+            right: 30%;
+            background-image: url('nanlp-idle-v1.png');
+            background-color: var(--nuclear-orange);
+            opacity: 0.5;
+        }
+
+        /* Rhythm UI */
+        #rhythm-container {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 50px;
+            border: 2px solid var(--static-white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #beat-target {
+            width: 20px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border-left: 2px solid var(--nuclear-orange);
+            border-right: 2px solid var(--nuclear-orange);
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #beat-marker {
+            width: 10px;
+            height: 40px;
+            background: var(--glitch-cyan);
+            position: absolute;
+            left: 0;
+        }
+
+        .stabilized {
+            animation: none !important;
+            opacity: 1 !important;
+            filter: none !important;
+        }
+
+        .choice-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .choice-btn {
+            background: var(--void-black);
+            color: var(--static-white);
+            border: 2px solid var(--nuclear-orange);
+            padding: 15px;
+            font-family: var(--font-nes);
+            cursor: pointer;
+        }
+        
+        .choice-btn:hover {
+            background: var(--nuclear-orange);
+            color: var(--void-black);
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div id="city-bg"></div>
+    <canvas id="particle-canvas"></canvas>
+
+    <div id="rhythm-container">
+        <div id="beat-target"></div>
+        <div id="beat-marker"></div>
+    </div>
+    <div style="position:absolute; top: 15%; width: 100%; text-align: center; color: white; font-family: monospace;">PRESS SPACE TO STABILIZE</div>
+
+    <div id="hero" class="character"></div>
+    <div id="partner" class="character glitch-heavy"></div>
+
+    <div class="choice-container" id="choices">
+        <button class="choice-btn" onclick="makeChoice('A')">A) "Come back to reality."</button>
+        <button class="choice-btn" onclick="makeChoice('B')">B) "We look inside... and push it back down."</button>
+    </div>
+
+    <!-- Dialogue UI -->
+    <div class="dialogue-container">
+        <div class="portrait-frame">
+            <img src="" alt="Character Portrait">
+        </div>
+        <div class="dialogue-text-area">
+            <span class="name-tag"></span>
+            <span class="dialogue-text"></span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Rhythm Logic
+        const marker = document.getElementById('beat-marker');
+        const container = document.getElementById('rhythm-container');
+        const partner = document.getElementById('partner');
+        const width = 300;
+        let pos = 0;
+        let speed = 4;
+        let direction = 1;
+        let successes = 0;
+        const requiredSuccesses = 5;
+        let gameActive = true;
+
+        function updateRhythm() {
+            if(!gameActive) return;
+
+            pos += speed * direction;
+            if(pos > width - 10 || pos < 0) {
+                direction *= -1;
+            }
+
+            marker.style.left = pos + 'px';
+            requestAnimationFrame(updateRhythm);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if(e.code === 'Space' && gameActive) {
+                checkHit();
+            }
+        });
+
+        function checkHit() {
+            // Target is at 50% (150px) center.
+            // Marker width 10px. Target width 20px.
+            // Center of marker = pos + 5.
+            // Center of target = 150.
+            const center = pos + 5;
+            if(Math.abs(center - 150) < 20) {
+                // Hit
+                successes++;
+                visualFeedback('HIT');
+                
+                // Reduce glitch
+                partner.style.opacity = 0.5 + (successes * 0.1);
+                
+                if(successes >= requiredSuccesses) {
+                    gameActive = false;
+                    partner.classList.remove('glitch-heavy');
+                    partner.classList.add('stabilized');
+                    document.getElementById('rhythm-container').style.display = 'none';
+                    startDialogue();
+                }
+            } else {
+                // Miss
+                visualFeedback('MISS');
+            }
+        }
+
+        function visualFeedback(text) {
+            const el = document.createElement('div');
+            el.textContent = text;
+            el.style.position = 'absolute';
+            el.style.top = '10%';
+            el.style.left = '50%';
+            el.style.color = text === 'HIT' ? '#0F0' : '#F00';
+            el.style.fontFamily = 'monospace';
+            el.style.fontSize = '2rem';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 500);
+        }
+
+        function startDialogue() {
+            showDialogue('partner', "Floating down... as colors fill the light.", () => {
+                document.getElementById('choices').style.display = 'flex';
+            });
+        }
+
+        window.makeChoice = function(option) {
+            document.getElementById('choices').style.display = 'none';
+            if(option === 'A') {
+                showDialogue('partner', "Reality is broken.", () => location.reload());
+            } else {
+                showDialogue('partner', "We look inside...", () => {
+                    // Embrace animation (move closer)
+                    document.getElementById('hero').style.left = '45%';
+                    document.getElementById('partner').style.right = '45%';
+                    
+                    localStorage.setItem('fragment_7', 'found');
+                    setTimeout(() => {
+                        window.location.href = 'kiss of requim.html';
+                    }, 2000);
+                });
+            }
+        }
+
+        requestAnimationFrame(updateRhythm);
+    </script>
+</body>
+</html>
