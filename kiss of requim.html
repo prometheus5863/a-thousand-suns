@@ -1,1 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocol: SUNS - KISS OF REQUIEM</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #000;
+            color: #0F0; /* Green CRT */
+            font-family: 'Courier New', monospace;
+        }
 
+        #cockpit {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border: 50px solid #222;
+            border-bottom: 150px solid #222; /* Dashboard */
+            box-sizing: border-box;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        #dashboard {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #111;
+            padding: 20px;
+            border: 2px solid #0F0;
+        }
+
+        input[type="range"] {
+            width: 300px;
+            margin: 20px;
+        }
+
+        #static-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            opacity: 1;
+        }
+
+        #message-display {
+            font-size: 1.5rem;
+            min-height: 2em;
+            text-align: center;
+            text-shadow: 0 0 5px #0F0;
+        }
+
+        .choice-container {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .choice-btn {
+            background: var(--void-black);
+            color: var(--static-white);
+            border: 2px solid var(--nuclear-orange);
+            padding: 15px;
+            font-family: var(--font-nes);
+            cursor: pointer;
+        }
+        
+        .choice-btn:hover {
+            background: var(--nuclear-orange);
+            color: var(--void-black);
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div id="cockpit"></div>
+    <canvas id="particle-canvas"></canvas> <!-- Rain -->
+    <canvas id="static-canvas"></canvas> <!-- Noise -->
+
+    <div id="dashboard">
+        <label>FREQUENCY TUNER: <span id="freq-val">88.0</span> MHz</label>
+        <input type="range" id="tuner" min="88.0" max="108.0" step="0.1" value="88.0">
+        <div id="message-display">...STATIC...</div>
+    </div>
+
+    <div class="choice-container" id="choices">
+        <button class="choice-btn" onclick="makeChoice('A')">A) "I'll put the fire out."</button>
+        <button class="choice-btn" onclick="makeChoice('B')">B) "Lift me up. Let me go."</button>
+    </div>
+
+    <!-- Dialogue UI -->
+    <div class="dialogue-container">
+        <div class="portrait-frame">
+            <img src="" alt="Character Portrait">
+        </div>
+        <div class="dialogue-text-area">
+            <span class="name-tag"></span>
+            <span class="dialogue-text"></span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Rain
+        class RainParticle extends Particle {
+            constructor() {
+                super();
+                this.color = 'rgba(0, 255, 0, 0.5)'; // Matrix rain style or just green rain
+                this.speedX = 0;
+                this.speedY = 10 + Math.random() * 5;
+                this.size = 2;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, 1, 10); // Long drops
+            }
+        }
+        particles.length = 0;
+        for (let i = 0; i < 100; i++) particles.push(new RainParticle());
+
+        // Static Canvas
+        const staticCanvas = document.getElementById('static-canvas');
+        const sCtx = staticCanvas.getContext('2d');
+        staticCanvas.width = window.innerWidth;
+        staticCanvas.height = window.innerHeight;
+
+        function drawStatic() {
+            const w = staticCanvas.width;
+            const h = staticCanvas.height;
+            const imgData = sCtx.createImageData(w, h);
+            const buffer = new Uint32Array(imgData.data.buffer);
+            
+            for(let i=0; i<buffer.length; i++) {
+                if(Math.random() < 0.5) {
+                    buffer[i] = 0xFF000000; // Black
+                } else {
+                    buffer[i] = 0xFFFFFFFF; // White
+                }
+            }
+            sCtx.putImageData(imgData, 0, 0);
+            requestAnimationFrame(drawStatic);
+        }
+        drawStatic();
+
+        // Tuner Logic
+        const tuner = document.getElementById('tuner');
+        const freqVal = document.getElementById('freq-val');
+        const display = document.getElementById('message-display');
+        const targetFreq = 102.5; // Target
+        let gameActive = true;
+
+        tuner.addEventListener('input', () => {
+            if(!gameActive) return;
+
+            const val = parseFloat(tuner.value);
+            freqVal.textContent = val.toFixed(1);
+
+            const diff = Math.abs(val - targetFreq);
+            
+            // Adjust static opacity based on diff
+            // If diff > 5, opacity 1. If diff 0, opacity 0.
+            const opacity = Math.min(1, diff / 2);
+            staticCanvas.style.opacity = opacity;
+
+            if(diff < 0.2) {
+                display.textContent = "SIGNAL ACQUIRED: I'M BURNING IN THE SKIES...";
+                display.style.color = "#FFF";
+                if(gameActive) {
+                    gameActive = false;
+                    setTimeout(startDialogue, 1000);
+                }
+            } else if (diff < 2) {
+                display.textContent = "I'm... b-burning... in... s-skies...";
+            } else {
+                display.textContent = "...STATIC...";
+            }
+        });
+
+        function startDialogue() {
+            showDialogue('partner', "I'm burning in the skies... I'm swimming in the smoke.", () => {
+                document.getElementById('choices').style.display = 'flex';
+            });
+        }
+
+        window.makeChoice = function(option) {
+            document.getElementById('choices').style.display = 'none';
+            if(option === 'A') {
+                showDialogue('partner', "The fire cannot be put out.", () => location.reload());
+            } else {
+                showDialogue('partner', "Lift me up. Let me go.", () => {
+                    localStorage.setItem('fragment_8', 'found');
+                    setTimeout(() => {
+                        window.location.href = 'messenger of valentines day.html';
+                    }, 2000);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
