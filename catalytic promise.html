@@ -1,1 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocol: SUNS - CATALYTIC PROMISE</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #000;
+            overflow: hidden;
+        }
 
+        #horizon-light {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 100% 50%, white 0%, transparent 60%);
+            z-index: 0;
+            animation: pulse-light 5s infinite ease-in-out;
+        }
+
+        @keyframes pulse-light {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        #game-stage {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        .cliff {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 80%;
+            height: 20%;
+            background: #111;
+            border-top: 4px solid var(--static-white);
+        }
+
+        .character {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            bottom: 20%;
+            background-size: contain;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+        }
+
+        #hero {
+            left: 10%;
+            background-image: url('harshpromlp-idle-v1.png');
+            background-color: var(--glitch-cyan);
+        }
+
+        #partner {
+            right: 25%; /* Near cliff edge */
+            background-image: url('nanlp-idle-v1.png');
+            background-color: var(--nuclear-orange);
+        }
+
+        #wind-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--static-white);
+            font-family: var(--font-nes);
+        }
+
+        .lock-btn {
+            position: absolute;
+            display: none;
+            padding: 10px 20px;
+            background: var(--nuclear-orange);
+            color: white;
+            border: 2px solid white;
+            font-family: var(--font-nes);
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .choice-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .choice-btn {
+            background: var(--void-black);
+            color: var(--static-white);
+            border: 2px solid var(--nuclear-orange);
+            padding: 15px;
+            font-family: var(--font-nes);
+            cursor: pointer;
+        }
+        
+        .choice-btn:hover {
+            background: var(--nuclear-orange);
+            color: var(--void-black);
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div id="horizon-light"></div>
+    <canvas id="particle-canvas"></canvas>
+
+    <div id="game-stage">
+        <div id="wind-indicator"><<< STRONG WIND <<<</div>
+        <div class="cliff"></div>
+        <div id="hero" class="character"></div>
+        <div id="partner" class="character"></div>
+        <button id="lock-btn" class="lock-btn">LOCK PINKIES</button>
+    </div>
+
+    <div class="choice-container" id="choices">
+        <button class="choice-btn" onclick="makeChoice('A')">A) "We can escape this."</button>
+        <button class="choice-btn" onclick="makeChoice('B')">B) "And when I close my eyes tonight... to symphonies of blinding light."</button>
+    </div>
+
+    <!-- Dialogue UI -->
+    <div class="dialogue-container">
+        <div class="portrait-frame">
+            <img src="" alt="Character Portrait">
+        </div>
+        <div class="dialogue-text-area">
+            <span class="name-tag"></span>
+            <span class="dialogue-text"></span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Wind Particles
+        class WindParticle extends Particle {
+            constructor() {
+                super();
+                this.speedX = -5 - Math.random() * 5; // Fast left
+                this.speedY = 0;
+                this.color = 'rgba(255,255,255,0.5)';
+            }
+        }
+        particles.length = 0;
+        for (let i = 0; i < 50; i++) particles.push(new WindParticle());
+
+        // Game Logic
+        const hero = document.getElementById('hero');
+        const partner = document.getElementById('partner');
+        const lockBtn = document.getElementById('lock-btn');
+        
+        let heroX = 10; // Percent
+        const partnerX = 75; // Percent
+        let gameActive = true;
+        
+        // Loop
+        function gameLoop() {
+            if(!gameActive) return;
+
+            // Wind pushes back
+            if(heroX > 10) {
+                heroX -= 0.1; // Push back
+            }
+
+            hero.style.left = heroX + '%';
+
+            // Check distance
+            if(Math.abs(heroX - partnerX) < 5) {
+                lockBtn.style.display = 'block';
+                lockBtn.style.left = (partnerX - 2) + '%';
+                lockBtn.style.bottom = '30%';
+            } else {
+                lockBtn.style.display = 'none';
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Controls
+        const keys = {};
+        document.addEventListener('keydown', e => {
+            if(!gameActive) return;
+            if(e.code === 'ArrowRight') {
+                heroX += 1.5; // Move forward stronger than wind
+            }
+        });
+
+        lockBtn.addEventListener('click', () => {
+            gameActive = false;
+            lockBtn.style.display = 'none';
+            startDialogue();
+        });
+
+        function startDialogue() {
+            showDialogue('partner', "God bless us everyone... we're a broken people living under loaded gun.", () => {
+                document.getElementById('choices').style.display = 'flex';
+            });
+        }
+
+        window.makeChoice = function(option) {
+            document.getElementById('choices').style.display = 'none';
+            if(option === 'A') {
+                showDialogue('partner', "There is no escape.", () => location.reload());
+            } else {
+                showDialogue('partner', "Symphonies of blinding light...", () => {
+                    // Fade to white
+                    const fade = document.createElement('div');
+                    fade.style.position = 'fixed';
+                    fade.style.top = 0; fade.style.left = 0;
+                    fade.style.width = '100%'; fade.style.height = '100%';
+                    fade.style.background = 'white';
+                    fade.style.zIndex = 9999;
+                    fade.style.opacity = 0;
+                    fade.style.transition = 'opacity 3s';
+                    document.body.appendChild(fade);
+                    
+                    // Trigger fade
+                    setTimeout(() => fade.style.opacity = 1, 100);
+
+                    localStorage.setItem('fragment_6', 'found');
+                    setTimeout(() => {
+                        window.location.href = 'blackout hug.html';
+                    }, 3500);
+                });
+            }
+        }
+
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
