@@ -1,1 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocol: SUNS - WAITING FOR THE PROPOSAL</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #050510; /* Deep blue/black */
+            overflow: hidden;
+        }
 
+        #game-stage {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .platform {
+            position: absolute;
+            background-color: var(--ash-grey);
+            border: 2px solid var(--static-white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--static-white);
+            box-shadow: 0 0 5px var(--glitch-cyan);
+        }
+        
+        /* Debris styles */
+        .platform.tv { width: 80px; height: 60px; border-radius: 4px; }
+        .platform.tv::before { content: "[TV]"; }
+        
+        .platform.radio { width: 60px; height: 40px; }
+        .platform.radio::before { content: "[RAD]"; }
+
+        .character {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+            transition: transform 0.1s; /* Smooth rotation */
+        }
+
+        #hero {
+            background-image: url('harshpromlp-idle-v1.png');
+            background-color: var(--glitch-cyan);
+            left: 50px;
+            bottom: 50px; /* Start pos */
+        }
+
+        #partner {
+            background-image: url('nanlp-idle-v1.png');
+            background-color: var(--nuclear-orange);
+            right: 50px;
+            top: 100px; /* Floating away */
+            animation: float 3s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .choice-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .choice-btn {
+            background: var(--void-black);
+            color: var(--static-white);
+            border: 2px solid var(--nuclear-orange);
+            padding: 15px;
+            font-family: var(--font-nes);
+            cursor: pointer;
+        }
+        
+        .choice-btn:hover {
+            background: var(--nuclear-orange);
+            color: var(--void-black);
+        }
+
+        .handshake-btn {
+            position: absolute;
+            display: none;
+            padding: 10px;
+            background: var(--nuclear-orange);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-nes);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div id="game-stage">
+        <!-- Platforms generated or hardcoded -->
+        <div class="platform tv" style="left: 50px; bottom: 50px; width: 100px;">START</div>
+        <div class="platform radio" style="left: 200px; bottom: 150px;"></div>
+        <div class="platform tv" style="left: 350px; bottom: 250px;"></div>
+        <div class="platform radio" style="left: 500px; bottom: 150px;"></div>
+        <div class="platform tv" style="left: 650px; bottom: 300px;"></div>
+        <div class="platform radio" style="left: 800px; bottom: 400px;"></div>
+        <div class="platform tv" style="left: 900px; bottom: 500px;">GOAL</div>
+
+        <div id="hero" class="character"></div>
+        <div id="partner" class="character" style="left: 920px; bottom: 550px; top: auto;"></div>
+        
+        <button id="handshake-btn" class="handshake-btn">INITIATE HANDSHAKE</button>
+    </div>
+
+    <div class="choice-container" id="choices">
+        <button class="choice-btn" onclick="makeChoice('A')">A) "Then let's forget everything."</button>
+        <button class="choice-btn" onclick="makeChoice('B')">B) "The hardest part of ending is starting again."</button>
+    </div>
+
+    <!-- Dialogue UI -->
+    <div class="dialogue-container">
+        <div class="portrait-frame">
+            <img src="" alt="Character Portrait">
+        </div>
+        <div class="dialogue-text-area">
+            <span class="name-tag"></span>
+            <span class="dialogue-text"></span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Physics variables
+        const hero = document.getElementById('hero');
+        const partner = document.getElementById('partner');
+        const handshakeBtn = document.getElementById('handshake-btn');
+        const platforms = document.querySelectorAll('.platform');
+        
+        let x = 50;
+        let y = 50; // Bottom px
+        let vx = 0;
+        let vy = 0;
+        let grounded = false;
+        
+        const GRAVITY = 0.2; // Low gravity
+        const JUMP_FORCE = 8;
+        const SPEED = 3;
+        const FRICTION = 0.9;
+
+        // Key states
+        const keys = {};
+        document.addEventListener('keydown', e => keys[e.code] = true);
+        document.addEventListener('keyup', e => keys[e.code] = false);
+
+        function update() {
+            if(document.getElementById('choices').style.display === 'flex') return;
+
+            // Horizontal
+            if(keys['ArrowRight']) vx += 0.5;
+            if(keys['ArrowLeft']) vx -= 0.5;
+            vx *= FRICTION;
+            x += vx;
+
+            // Vertical
+            if(keys['Space'] && grounded) {
+                vy = JUMP_FORCE;
+                grounded = false;
+            }
+            vy -= GRAVITY;
+            y += vy;
+
+            // Collision Detection
+            grounded = false;
+            // Floor check (death)
+            if(y < -100) {
+                reset();
+            }
+
+            // Platform collision
+            const heroRect = { left: x, right: x + 40, top: y + 40, bottom: y };
+            
+            platforms.forEach(p => {
+                const pRect = {
+                    left: parseInt(p.style.left),
+                    right: parseInt(p.style.left) + p.offsetWidth,
+                    top: parseInt(p.style.bottom) + p.offsetHeight,
+                    bottom: parseInt(p.style.bottom)
+                };
+
+                // Simple AABB
+                if(heroRect.right > pRect.left && heroRect.left < pRect.right &&
+                   heroRect.bottom < pRect.top && heroRect.top > pRect.bottom) {
+                    
+                    // Landing from top
+                    if(vy < 0 && (heroRect.bottom - vy) >= pRect.top) {
+                        y = pRect.top;
+                        vy = 0;
+                        grounded = true;
+                    }
+                }
+            });
+
+            // Update DOM
+            hero.style.left = x + 'px';
+            hero.style.bottom = y + 'px';
+
+            // Check distance to partner
+            const dx = x - parseInt(partner.style.left);
+            const dy = y - parseInt(partner.style.bottom);
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            if(dist < 100) {
+                handshakeBtn.style.display = 'block';
+                handshakeBtn.style.left = (parseInt(partner.style.left) - 20) + 'px';
+                handshakeBtn.style.bottom = (parseInt(partner.style.bottom) + 50) + 'px';
+            } else {
+                handshakeBtn.style.display = 'none';
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        function reset() {
+            x = 50;
+            y = 50;
+            vx = 0;
+            vy = 0;
+            showDialogue('hero', 'Drifting away...');
+        }
+
+        handshakeBtn.addEventListener('click', () => {
+            handshakeBtn.style.display = 'none';
+            showDialogue('partner', "I know what it takes to move on... I know what it takes to forget.", () => {
+                document.getElementById('choices').style.display = 'flex';
+            });
+        });
+
+        window.makeChoice = function(option) {
+            document.getElementById('choices').style.display = 'none';
+            if(option === 'A') {
+                showDialogue('partner', "Then we are lost.", () => reset());
+            } else {
+                showDialogue('partner', "The hardest part of ending is starting again.", () => {
+                    // Flash White
+                    const flash = document.createElement('div');
+                    flash.style.position = 'fixed';
+                    flash.style.top = '0';
+                    flash.style.left = '0';
+                    flash.style.width = '100%';
+                    flash.style.height = '100%';
+                    flash.style.background = 'white';
+                    flash.style.zIndex = '9999';
+                    flash.style.transition = 'opacity 2s';
+                    document.body.appendChild(flash);
+                    
+                    localStorage.setItem('fragment_3', 'found');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'chocolate robot boy.html';
+                    }, 2000);
+                });
+            }
+        }
+
+        // Init
+        requestAnimationFrame(update);
+        setTimeout(() => showDialogue('hero', 'Gravity is weak here. I feel... lighter.'), 500);
+
+    </script>
+</body>
+</html>
